@@ -1,0 +1,542 @@
+<html><head>
+<HTA:APPLICATION
+ APPLICATIONNAME="HTML Notepad" ID="oHTA" BORDER="thick"
+ BORDERSTYLE="normal" CAPTION="yes" CONTEXTMENU="yes"
+ INNERBORDER="no" MAXIMIZEBUTTON="yes" MINIMIZEBUTTON="yes"
+ NAVIGABLE="yes"
+ ICON="NOTEPAD.EXE" SCROLL="no" SCROLLFLAT="no"
+ SELECTION="no" SHOWINTASKBAR="yes" SINGLEINSTANCE="no"
+ SYSMENU="yes" VERSION="1.0" WINDOWSTATE="normal">
+<STYLE TYPE="text/css">
+<!--
+BODY { xfont-family: "Verdana, Arial, Helvetica, sans-serif";
+  font:menu;
+  background-color:Menu;
+  color:MenuText;
+  xfont-size: 8pt;
+  cursor:default; //auto, text, pointer
+ }
+TABLE { xfont-family:"Arial";
+  xfont-size:8pt;
+  font:menu;
+  padding:0pt;
+  border:0pt;
+  FILTER: progid:DXImageTransform.Microsoft.Alpha(style=0,opacity=90);
+ }
+IFrame { height:expression(document.body.clientHeight-MenuTable.clientHeight);
+  width:100%;
+ }
+TD { border:"1px solid Menu";}
+.submenu {position:absolute;top=20;
+  background-color:Menu;
+  border="2px outset";}
+.MenuIn  {border:'1px inset';}
+.Menuover {border:'1px outset';}
+.Menuout {border:'1px solid';}
+.Submenuover {background-color:highlight;color:highlighttext;}
+.Submenuout {background-color:Menu;color:MenuText;}
+-->
+</STYLE>
+<script language=vbscript>
+'We can handle a file as a parameter to this HTA
+Dim x
+FileName=Trim(oHTA.CommandLine)
+x=Instr(2,FileName,"""")
+If x=Len(FileName) Then
+ FileName="" 'No File Loaded
+Else
+ FileName=Trim(Mid(FileName,x+1))
+ OpenIt
+End If
+</script>
+<script language=vbscript>
+option explicit
+Dim FileName,fModif,LastChildMenu,LastMenu
+fModif=False 'Not modified
+DisplayTitle
+Set LastChildMenu=Nothing
+Set LastMenu=Nothing
+Sub DisplayTitle
+ If FileName="" Then
+  document.Title="Batch Editor - " & oHTA.ApplicationName
+ Else
+  document.Title=FileName & " - " & oHTA.ApplicationName
+ End If
+End Sub
+
+'''''''''''''''''''
+' File management '
+'''''''''''''''''''
+Sub SaveAs
+ Dim oDLG
+ Set oDLG=CreateObject("MSComDlg.CommonDialog")
+ With oDLG
+  .DialogTitle="บันทึกเป็น"
+  .Filter="ไฟล์ Batch|*.bat;*.cmd|ไฟล์ HTML Application|*.hta;*.html;*.htm|ไฟล์ข้อความ|*.txt|ไฟล์ทั้งหมด|*.*"
+  .MaxFileSize=255
+  .ShowSave
+  If .FileName<>"" Then
+   FileName=.FileName
+   Save
+  End If
+ End With
+ Set oDLG=Nothing
+ DisplayTitle
+End Sub
+Sub Save()
+ Dim fso,f
+ If FileName<>"" Then
+  Set fso=CreateObject("Scripting.FileSystemObject")
+  Set f=fso.CreateTextFile(FileName,True)
+  f.Write MyFrame.MyText.Value
+  f.Close
+  Set f=Nothing
+  Set fso=Nothing
+ Else
+  SaveAs
+ End If
+End Sub
+Sub OpenIt
+ Dim fso,f
+ Set fso=CreateObject("Scripting.FileSystemObject")
+ Set f=fso.OpenTextFile(FileName,1)
+ MyFrame.MyText.Value=f.ReadAll
+ f.close
+ Set f=Nothing
+ Set fso=Nothing
+ DisplayTitle
+End Sub
+Sub Open()
+ If fModif Then
+  Select Case Msgbox("ข้อความในไฟล์ " & FileName & "ได้รับการเปลิ่ยนแปลงแล้ว." _
+   & vbCrLf & "คุณด้องการบันทึดไฟล์หรือไม่ ?",51,oHTA.ApplicationName)
+  Case 6 'Yes
+   Save
+  Case 7 'No
+  Case 2 'Cancel
+   Exit Sub
+  End Select
+ End If
+ Dim oDLG
+ Set oDLG=CreateObject("MSComDlg.CommonDialog")
+ With oDLG
+  .DialogTitle="เปิด"
+  .Filter="ไฟล์ Batch|*.bat;*.cmd|ไฟล์ HTML Application|*.hta;*.html;*.htm|ไฟล์ข้อความ|*.txt|ไฟล์ทั้งหมด|*.*"
+  .MaxFileSize=255
+  .Flags=.Flags Or &H1000 'FileMustExist (OFN_FILEMUSTEXIST)
+  .ShowOpen
+  If .FileName<>"" Then
+   FileName=.FileName
+   OpenIt
+  End If
+ End With
+ Set oDLG=Nothing
+End Sub
+Sub NewText
+ If fModif Then
+  Select Case Msgbox("ข้อความในไฟล์ " & FileName & "ได้รับการเปลิ่ยนแปลงแล้ว." _
+   & vbCrLf & "คุณด้องการบันทึดไฟล์หรือไม่ ?",51,oHTA.ApplicationName)
+  Case 6 'Yes
+   Save
+  Case 7 'No
+  Case 2 'Cancel
+   Exit Sub
+  End Select
+ End If
+ MyFrame.MyText.Value=""
+ FileName=""
+ DisplayTitle
+End Sub
+
+'''''''''''''''
+' Drag & Drop '
+'''''''''''''''
+Sub ChangeIFrame
+ 'We use an Iframe to allow Drag&Drop
+ MyFrame.Document.Body.InnerHTML="<textarea ID=MyText WRAP=OFF onChange" & _
+  "='vbscript:parent.fModif=True' onclick='vbscript:parent.HideMenu' " & _
+  "style='width:100%;height:100%'></textarea>"
+ With MyFrame.Document.Body.Style
+  .marginleft=0
+  .margintop=0
+  .marginright=0
+  .marginbottom=0
+ End With
+ With MyFrame.MyText.Style
+  .fontfamily="Lucida Console"
+  '.fontsize="16pt"
+ End With
+ Select Case UCase(MyFrame.location.href)
+ Case "ABOUT:BLANK"
+  FileName=""
+ Case Else
+  FileName=Replace(Mid(MyFrame.location.href,9),"/","\") 'suppress file:///
+  OpenIt
+ End Select
+End Sub
+
+'''''''''''''''''''
+' Menu management '
+'''''''''''''''''''
+Sub Batch(Cmd)
+    Dim objShell
+    Set objShell=CreateObject("wscript.shell")
+ objShell.run("cmd.exe /c " & Cmd & "/? & PAUSE")
+End Sub
+
+Sub ShowSubMenu(Parent,Child)
+ If Child.style.display="block" Then
+  Parent.classname="Menuover"
+  Child.style.display="none"
+  Set LastChildMenu=Nothing
+ Else
+  Parent.classname="Menuin"
+  Child.style.display="block"
+  Set LastChildMenu=Child
+ End If
+ Set LastMenu=Parent
+End Sub
+Sub MenuOver(Parent,Child)
+ If LastChildMenu is Nothing Then
+  Parent.className="MenuOver"
+ Else
+  If LastMenu is Parent Then
+   Parent.className="MenuIn"
+  Else
+   HideMenu
+   ShowSubMenu Parent,Child
+  End If
+ End If
+End Sub
+Sub MenuOut(Menu)
+ If LastChildMenu is Nothing Then Menu.className="MenuOut"
+End Sub
+Sub HideMenu
+ If Not LastChildMenu is Nothing Then
+  LastChildMenu.style.display="none"
+  Set LastChildMenu=Nothing
+  LAstMenu.classname="Menuout"
+ End If
+End Sub
+Sub SubMenuOver(Menu)
+ Menu.className="SubMenuOver"
+ 'LastMenu.classname="Menuin"
+End Sub
+Sub SubMenuOut(Menu)
+ Menu.className="SubMenuOut"
+End Sub
+</script>
+</head>
+<body leftmargin=0 topmargin=0 rightmargin=0>
+<TABLE id=MenuTable><TR>
+ <TD onclick='ShowSubMenu Me,MyFileMenu'
+  onmouseover='MenuOver Me,MyFileMenu'
+  onmouseout='MenuOut Me'> แฟ้มข้อมูล   </TD>
+ <TD onclick='ShowSubMenu Me,MyEditMenu'
+  onmouseover='MenuOver Me,MyEditMenu'
+  onmouseout='MenuOut Me'> คำสั่ง Batch</TD>
+ <TD onclick='ShowSubMenu Me,MyHelpMenu'
+  onmouseover='MenuOver Me,MyHelpMenu'
+  onmouseout='MenuOut Me'> ผู้เขียน </TD>
+ <TD onclick="HideMenu" width=100% border=2></TD>
+ </TR>
+</TABLE>
+<TABLE ID=MyFileMenu class=submenu style="left=2;display:none;"><TR>
+ <TD onclick="HideMenu:NewText"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> สร้างใหม่</TD></TR>
+ <TR><TD onclick="HideMenu:open"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> เปิดแฟ้ม</TD></TR>
+ <TR><TD onclick="HideMenu:save"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> บันทึกแฟ้ม</TD></TR>
+ <TR><TD onclick="HideMenu:saveAs"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> บันทึกแฟ้มเป็น...</TD></TR>
+ <TR><TD><HR></TD></TR>
+ <TR><TD onclick="HideMenu:window.close"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> ออก</TD>
+ </TR>
+</TABLE>
+<TABLE ID=MyEditMenu class=submenu style="left=30;display:none;">
+ <TR><TD onclick="HideMenu:Batch('ASSOC')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> ASSOC</TD>
+     <TD onclick="HideMenu:Batch('ATTRIB')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> ATTRIB</TD>
+     <TD onclick="HideMenu:Batch('BREAK')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> BREAK</TD>
+     <TD onclick="HideMenu:Batch('BCDEDIT')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> BCDEDIT</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('CACLS')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> CACLS</TD>
+     <TD onclick="HideMenu:Batch('CALL')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> CALL</TD>
+     <TD onclick="HideMenu:Batch('CD')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> CD</TD>
+     <TD onclick="HideMenu:Batch('CHCP')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> CHCP</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('CHDIR')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> CHDIR</TD>
+     <TD onclick="HideMenu:Batch('CHKDSK')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> CHKDSK</TD>
+     <TD onclick="HideMenu:Batch('CHKNTFS')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> CHKNTFS</TD>
+     <TD onclick="HideMenu:Batch('CLS')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> CLS</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('CMD')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> CMD</TD>
+     <TD onclick="HideMenu:Batch('COLOR')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> COLOR</TD>
+     <TD onclick="HideMenu:Batch('COMP')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> COMP</TD>
+     <TD onclick="HideMenu:Batch('COMPACT')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> COMPACT</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('CONVERT')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> CONVERT</TD>
+     <TD onclick="HideMenu:Batch('COPY')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> COPY</TD>
+     <TD onclick="HideMenu:Batch('DATE')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> DATE</TD>
+     <TD onclick="HideMenu:Batch('DEL')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> DEL</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('COPY')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> COPY</TD>
+     <TD onclick="HideMenu:Batch('DISKCOMP')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> DISKCOMP</TD>
+     <TD onclick="HideMenu:Batch('DISKCOPY')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> DISKCOPY</TD>
+     <TD onclick="HideMenu:Batch('DISKPART')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> DISKPART</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('DOSKEY')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> DOSKEY</TD>
+     <TD onclick="HideMenu:Batch('DRIVERQUERY')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> DRIVERQUERY</TD>
+     <TD onclick="HideMenu:Batch('ECHO')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> ECHO</TD>
+     <TD onclick="HideMenu:Batch('ENDLOCAL')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> ENDLOCAL</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('ERASE')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> ERASE</TD>
+     <TD onclick="HideMenu:Batch('EXIT')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> EXIT</TD>
+     <TD onclick="HideMenu:Batch('FC')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> FC</TD>
+     <TD onclick="HideMenu:Batch('FIND')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> FIND</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('FINDSTR')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> FINDSTR</TD>
+     <TD onclick="HideMenu:Batch('FOR')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> FOR</TD>
+     <TD onclick="HideMenu:Batch('FC')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> FC</TD>
+     <TD onclick="HideMenu:Batch('FORMAT')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> FORMAT</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('FSUTIL')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> FSUTIL</TD>
+     <TD onclick="HideMenu:Batch('FTYPE')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> FTYPE</TD>
+     <TD onclick="HideMenu:Batch('GOTO')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> GOTO</TD>
+     <TD onclick="HideMenu:Batch('GPRESULT')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> GPRESULT</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('GRATABL')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> GRAFTABL</TD>
+     <TD onclick="HideMenu:Batch('HELP')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> HELP</TD>
+     <TD onclick="HideMenu:Batch('ICACLS')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> ICACLS</TD>
+     <TD onclick="HideMenu:Batch('IF')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> IF</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('LABEL')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> LABEL</TD>
+     <TD onclick="HideMenu:Batch('MD')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> MD</TD>
+     <TD onclick="HideMenu:Batch('MKDIR')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> MKDIR</TD>
+     <TD onclick="HideMenu:Batch('MKLINK')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> MKLINK</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('MODE')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> MODE</TD>
+     <TD onclick="HideMenu:Batch('MORE')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> MORE</TD>
+     <TD onclick="HideMenu:Batch('MOVE')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> MOVE</TD>
+     <TD onclick="HideMenu:Batch('OPENFILES')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> OPENFILES</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('PATH')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> PATH</TD>
+     <TD onclick="HideMenu:Batch('PAUSE')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> PAUSE</TD>
+     <TD onclick="HideMenu:Batch('POPD')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> POPD</TD>
+     <TD onclick="HideMenu:Batch('PRINT')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> PRINT</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('PROMPT')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> PROMPT</TD>
+     <TD onclick="HideMenu:Batch('PUSHD')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> PUSHD</TD>
+     <TD onclick="HideMenu:Batch('RD')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> RD</TD>
+     <TD onclick="HideMenu:Batch('RECOVER')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> RECOVER</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('REM')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> REM</TD>
+     <TD onclick="HideMenu:Batch('REN')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> REN</TD>
+     <TD onclick="HideMenu:Batch('RENAME')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> RENAME</TD>
+     <TD onclick="HideMenu:Batch('REPLACE')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> REPLACE</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('RMDIR')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> RMDIR</TD>
+     <TD onclick="HideMenu:Batch('ROBOCOPY')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> ROBOCOPY</TD>
+     <TD onclick="HideMenu:Batch('SET')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> SET</TD>
+     <TD onclick="HideMenu:Batch('SETLOCAL')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> SETLOCAL</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('SC')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> SC</TD>
+     <TD onclick="HideMenu:Batch('SCHTASKS')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> SCHTASKS</TD>
+     <TD onclick="HideMenu:Batch('SHIFT')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> SHIFT</TD>
+     <TD onclick="HideMenu:Batch('SHUTDOWN')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> SHUTDOWN</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('SORT')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> SORT</TD>
+     <TD onclick="HideMenu:Batch('START')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> START</TD>
+     <TD onclick="HideMenu:Batch('SUBST')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> SUBST</TD>
+     <TD onclick="HideMenu:Batch('SYSTEMINFO')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> SYSTEMINFO</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('TASKLIST')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> TASKLIST</TD>
+     <TD onclick="HideMenu:Batch('TASKILL')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> TASKKILL</TD>
+     <TD onclick="HideMenu:Batch('TIME')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> TIME</TD>
+     <TD onclick="HideMenu:Batch('TITLE')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> TITLE</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('TREE')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> TREE</TD>
+     <TD onclick="HideMenu:Batch('TYPE')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> TYPE</TD>
+     <TD onclick="HideMenu:Batch('VER')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> VER</TD>
+     <TD onclick="HideMenu:Batch('VERIFY')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> VERIFY</TD></TR>
+ <TR><TD onclick="HideMenu:Batch('VOL')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> VOL</TD>
+     <TD onclick="HideMenu:Batch('XCOPY')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> XCOPY</TD>
+     <TD onclick="HideMenu:Batch('WMIC')"
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'> WMIC</TD>
+ </TR>
+</TABLE>
+<TABLE ID=MyFindMenu class=submenu style="left=60;display:none;"><TR>
+ <TD><HR width=50px></TD></TR>
+</TABLE>
+<TABLE ID=MyHelpMenu class=submenu style="left=90;display:none;"><TR>
+ <TD onclick='HideMenu:msgbox "ความช่วยเหลืออยู่ในเว็บ www.thaibatchfile.blogspot.com"'
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'>ความช่วยเหลือ</TD></TR>
+ <TR><TD onclick='HideMenu:msgbox "ธนัตถ์เดชน์  บุญลือลักษณ์, 2014; www.thaibatchfile.blogspot.com"'
+  onmouseover='Submenuover Me'
+  onmouseout='Submenuout Me'>เกี่ยวกับ</TD>
+ </TR>
+</TABLE>
+<iframe id=MyFrame application=yes scrolling=no onload="ChangeIFrame"></iframe>
+</script>
+</body>
+</html>
