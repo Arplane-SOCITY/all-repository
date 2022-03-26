@@ -1,0 +1,64 @@
+<html>
+<head>
+<title>My HTML Application</title>
+ <hta:application
+     applicationname="MyHTA"   
+     border="thick"
+     borderstyle="normal"
+     caption="My HTML Application"
+     contextmenu="no"
+     icon="myicon.ico"
+     maximizebutton="no"
+     minimizebutton="yes"
+     navigable="no"
+     scroll="no"
+     selection="no"
+     showintaskbar="yes"
+     singleinstance="yes"
+     sysmenu="yes"
+     version="1.0"
+     windowstate="maximize" >
+  <script language="VBScript">
+  Sub Window_onLoad()
+ runMS_DOS
+  End Sub   
+
+  Sub runMS_DOS()
+    Dim objCap 
+ Dim objShell
+ Dim objStdOut
+    Set objShell=CreateObject("wscript.shell")
+    Set objCap=objShell.Exec("cmd /c " & "LAN.BAT")
+    Do Until objCap.Status
+      strHtml=objCap.StdOut.ReadLine
+      frmData.document.write "<font face=&#34MS Sans Serif&#34 size=2>" & strHtml & "</font><br>"  
+      frmData.focus
+      Call ForceRefresh()
+      frmData.Scrollto 0, 99999999
+    Loop
+    MsgBox "เสร็จเรียบร้อย" 
+  End Sub
+
+  Function ForceRefresh()
+    Set oShell = CreateObject("WScript.Shell")
+    oShell.Run "cmd /c", 0, True  
+  End Function
+  sub checkEnter
+    With window.event
+      if .keycode = 13 then
+        runMS_DOS
+      Else
+        .cancelbubble = false
+        .returnvalue = true
+      End if
+    End With
+  End sub
+
+  </script>
+ </head>
+ <body bgcolor="Black" color="Green">
+   <iframe id="frmData" scrolling="Yes" width="100%" height="80%" frameborder="1" style="background: Black;">
+   <div id="divTest"></div> 
+   </iframe>
+ </body>
+</html>
