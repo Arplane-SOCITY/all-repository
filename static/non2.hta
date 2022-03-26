@@ -1,0 +1,17 @@
+Sub result ( )
+    Dim strComputer, objShell, objExec, strPingResults, WshShell
+strComputer = Trim( UCase( ComputerNameTextBox.Value ) )
+        Set WshShell = CreateObject("WScript.Shell")
+        Set objExec = WshShell.Exec("cmd.exe /c  C: \Program Files (x86)\VMware\VMware vSphere CLI\bin & esxcli -s "&strComputer&" -u root -p NTMC_Admin network nic list ")
+        strPingResults = LCase(objExec.StdOut.ReadAll)
+        ResultsTextArea.Value = ""
+
+        ResultsHiddenText.Value = strComputer   & vbTab
+        ResultsHiddenText.Value = strComputer & vbcr & vblf & strPingResults
+        ResultsTextArea.Value = ResultsTextArea.Value & strPingResults   
+        CopyButton.Disabled = False
+        ResetButton.Disabled = False
+
+    ' change mouse pointer back to default
+    Document.Body.Style.Cursor = "default"
+End Sub

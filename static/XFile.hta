@@ -1,0 +1,136 @@
+<HTML>
+ <HEAD>
+ <HTA:APPLICATION ID="FileBrowser"
+    APPLICATIONNAME="FileBrowser"
+    WINDOWSTATE="normal"
+    SINGLEINSTANCE="no"
+ >
+ <TITLE>กรุณาเลือกไฟล์</TITLE>
+  <style type="text/css">
+   ul { list-style-type:none; margin:1; padding:1; padding-top:7px; padding-bottom:5px; }
+   li { display:inline; }
+   a:link,a:visited { color:#00FF00; background-color:Black; }
+   a:hover,a:active { color:Black; background-color:#00FF00; }
+ </style>
+ <SCRIPT LANGUAGE="VBScript">
+  public A1
+  Sub window_onLoad()
+    Dim arrCommands
+    arrCommands = Split(FileBrowser.commandLine, chr(34))
+    For i = 3 to (Ubound(arrCommands) - 1) Step 2
+        A1 = arrCommands(i)
+    Next
+ If A1 = "a" Then
+   msgbox "กรุณาสารระบบ  Batch File ที่จะรับพารามิเตอร์"
+ Else
+      Call ListDrive()
+      Call DoList()
+ End If
+  End Sub
+
+ Function ListDrive()
+   Dim objFSO, colDrives, N
+   Set objFSO = CreateObject("Scripting.FileSystemObject")
+   Set colDrives = objFSO.Drives
+   N = 0
+   For Each objDrive in colDrives
+     N = N + 1
+     ShowDrive.innerhtml = showDrive.innerhtml & "<a href=#Top onClick=ChangeDrive(" & chr(34) & objDrive.DriveLetter & ":" & chr(34) & ")>" & objDrive.DriveLetter & ": </a>"
+   Next
+ End Function
+
+ Sub DoList()
+  Dim SubDir, N, fso, fPath, O
+  Set fso = CreateObject("scripting.FilesystemObject")
+  fPath = CDir()
+  Set folder = fso.getfolder(fPath)
+  ShowDir.innerhtml = "<a href=#Top onClick=BackDir()>\..</a><br>"
+  ShowFile.innerhtml = ""
+  N = 0
+  For Each f in folder.subfolders
+    N = N + 1
+    SubDir =  mid(f.path, instrrev(f.path,"\"))
+    ShowDir.innerhtml = ShowDir.innerhtml & "<a href=#Top onClick=ChangeDir(" & N & ")>" & SubDir & "</a><br>"
+  Next
+  O = 0
+  For Each f in folder.files
+    O = O + 1
+ ShowFile.innerhtml = ShowFile.innerhtml & "<a href=#Top onClick=SelectFile(" & O & ")>" &  f.name & "</a><br>"
+  Next
+  PathDir.innerhtml = CDir()
+ End Sub
+
+ Function ChangeDir(N)
+  Dim O, fPath, objShell
+  Set fso = CreateObject("scripting.FilesystemObject")
+  Set objShell = CreateObject("Wscript.Shell")
+  fPath = CDir()
+  Set folder = fso.getfolder(fPath)
+  O = 0
+  For Each f in folder.subfolders
+    O = O + 1
+    If N = O Then
+   objShell.CurrentDirectory = f.path
+   Call DoList()
+ End If
+  Next
+ End Function
+
+ Function BackDir()
+  Dim objShell, FolPath, f
+  FolPath = CDir()
+  f = left(FolPath,InstrRev(FolPath,"\")-1)
+  If Len(f) < 3 Then f = f & "\"
+  Set objShell = CreateObject("Wscript.Shell")
+  objShell.CurrentDirectory = f
+  Call DoList()
+ End Function
+
+ Function CDir()
+   Set WshShell = CreateObject("WScript.Shell")
+   CDir = WshShell.CurrentDirectory
+ End Function
+
+ Function ChangeDrive(Drive)
+  Set objShell = CreateObject("Wscript.Shell")
+  objShell.CurrentDirectory = Drive
+  Call DoList()
+End Function
+
+ Function SelectFile(O)
+  Dim P, fPath, objShell, fso, WshShell, WS
+  Set WshShell = CreateObject("WScript.Shell")
+  Set fso = CreateObject("scripting.FilesystemObject")
+  Set objShell = CreateObject("Wscript.Shell")
+  fPath = CDir()
+  Set folder = fso.getfolder(fPath)
+  Set WS=CreateObject("WScript.Shell")
+  P = 0
+  For Each f in folder.files
+    P = P + 1
+    If O = P Then
+   If Len(fPath) > 3 Then
+        WS.Run "cmd /c " & A1 & " " & chr(34) & fPath & "\" & f.name & chr(34)
+   Else
+        WS.Run "cmd /c " & A1 & " " & chr(34) & fPath & f.name & chr(34)
+   End If
+ End If
+  Next
+  WshShell.SendKeys "%{F4}"
+ End Function
+
+ </SCRIPT>
+</HEAD>
+<BODY bgcolor="Black">
+ <FONT FACE="MS Sans Serif" SIZE=2 COLOR=#00FF00>
+ <div id=Top></div>
+ <div id=ShowDrive>ไดร์ฟ-></div>
+ <hr color=#00FF00>
+ <div id=PathDir></div>
+ <hr color=#00FF00>
+ <div id=ShowDir></div>
+ <hr color=#00FF00>
+ <div id=ShowFile></div>
+ </FONT>
+</BODY>
+</HTML>
