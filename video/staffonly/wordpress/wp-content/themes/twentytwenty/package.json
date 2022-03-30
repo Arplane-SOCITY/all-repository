@@ -14,8 +14,8 @@
 		"url": "https://core.trac.wordpress.org/"
 	},
 	"devDependencies": {
-		"@wordpress/browserslist-config": "^4.0.1",
-		"@wordpress/scripts": "^16.1.2",
+		"@wordpress/browserslist-config": "4.1.2",
+		"@wordpress/scripts": "16.1.5",
 		"autoprefixer": "10.4.4",
 		"concurrently": "^6.3.0",
 		"postcss-cli": "^9.0.2",
