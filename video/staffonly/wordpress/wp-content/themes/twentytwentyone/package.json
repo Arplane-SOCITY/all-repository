@@ -14,8 +14,8 @@
 	"homepage": "https://wordpress.org/themes/twentytwentyone/",
 	"devDependencies": {
 		"@wordpress/browserslist-config": "^4.0.1",
-		"@wordpress/eslint-plugin": "^9.2.0",
-		"@wordpress/stylelint-config": "^19.1.0",
+		"@wordpress/eslint-plugin": "11.1.0",
+		"@wordpress/stylelint-config": "20.0.2",
 		"autoprefixer": "10.4.4",
 		"chokidar-cli": "^3.0.0",
 		"eslint": "^8.2.0",
