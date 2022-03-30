@@ -33,7 +33,7 @@
 		"rtlcss": "^3.5.0",
 		"sass": "^1.43.4",
 		"stylelint": "^13.13.1",
-		"stylelint-config-recommended-scss": "^5.0.1"
+		"stylelint-config-recommended-scss": "5.0.2"
 	},
 	"rtlcssConfig": {
 		"options": {
