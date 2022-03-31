@@ -1,7 +1,3 @@
-# Error!
-* 404 Server Pre Open
-> ^ ^
->  _
-# 
-# Annuncements
-[Here!](annunments.md)
+# Video
+# Pinned
+* [Get Rick Rolled By DiscordGift.site](5q0gJs2eYB4.md)
