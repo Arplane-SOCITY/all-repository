@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: GitHub Community Support
+    url: https://github.community/
+    about: Please ask and answer questions here.
+  - name: GitHub Security Bug Bounty
+    url: https://bounty.github.com/
+    about: Please report security vulnerabilities here
+  - name: Arplane Website Support
+    url: https://arplane-socity.github.io/all-repository/docs
+    about: Please View The Documentation
