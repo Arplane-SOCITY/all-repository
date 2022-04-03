@@ -5,4 +5,4 @@
 # Staff Status
 ![Staff Offline](https://img.shields.io/badge/Staff%20Status-Offline-red)
 # License
-![License](https://img.shields.io/github/license/Arplane-SOCITY/all-repository?style=for-the-badge)(LICENSE.md)
+[![License](https://img.shields.io/github/license/Arplane-SOCITY/all-repository?style=for-the-badge)](LICENSE.md)
