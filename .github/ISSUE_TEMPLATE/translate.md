@@ -1,9 +1,9 @@
 ---
 name: Translate
 about: Translate A Files
-title: 'Translate Language:'
-labels: ''
-assignees: ''
+title: 'Translate Language*:'
+labels: translate
+assignees: Arplane-SOCITY
 
 ---
 
@@ -11,6 +11,7 @@ assignees: ''
 ---
 Language:English
 ---
-Translate Language:
+Translate Language*:
 ---
 Thank You!
+* Required
